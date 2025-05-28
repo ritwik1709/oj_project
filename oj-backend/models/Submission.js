@@ -32,6 +32,10 @@ const submissionSchema = new mongoose.Schema({
   resultOutput: {
     type: String,
   },
+  aiFeedback: {
+    type: String,
+    default: null
+  },
 
   submittedAt: {
     type: Date,

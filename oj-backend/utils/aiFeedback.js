@@ -1,0 +1,48 @@
+import { InferenceClient } from '@huggingface/inference';
+
+export const generateAIFeedback = async (code, language, verdict, testCase) => {
+    try {
+        const client = new InferenceClient(process.env.HF_API_TOKEN);
+        
+        const prompt = `As a programming mentor, analyze this code submission:
+Language: ${language}
+Verdict: ${verdict}
+Failed Test Case:
+Input: ${testCase.input}
+Expected Output: ${testCase.expectedOutput}
+Actual Output: ${testCase.output}
+
+Code:
+${code}
+
+Provide a helpful hint that:
+1. Points out what might be wrong
+2. Suggests areas to check
+3. Gives a general direction without revealing the exact solution
+Keep the response concise and focused on the specific issue.`;
+
+        const chatCompletion = await client.chatCompletion({
+            provider: "hf-inference",
+            model: "meta-llama/Llama-3.1-8B-Instruct",
+            messages: [{
+                role: "user",
+                content: prompt
+            }]
+        });
+        
+        return chatCompletion.choices[0].message.content;
+    } catch (error) {
+        console.error('AI Feedback Error:', error);
+        // Provide more specific fallback messages based on the verdict
+        switch (verdict) {
+            case 'Wrong Answer':
+                return "Check your logic for handling edge cases and verify your output format matches exactly what's expected.";
+            case 'Time Limit Exceeded':
+                return "Your solution might be using an inefficient algorithm. Consider optimizing your approach or using a more efficient data structure.";
+            case 'Runtime Error':
+                return "Look for potential null pointer dereferences, array index out of bounds, or division by zero in your code.";
+            default:
+                return "Review your code logic and ensure it handles all possible input cases correctly.";
+        }
+    }
+};

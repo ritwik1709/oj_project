@@ -1,3 +1,29 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+/* body {
+  background-color: white; 
+  min-height: 100vh;
+  margin: 0;
+}
+
+
+.dark body {
+  background-color: #1a202c; 
+  color: #f7fafc;
+} */
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  @apply bg-white text-gray-900;
+}
+
+.dark body {
+  @apply bg-gray-900 text-gray-100;
+}
