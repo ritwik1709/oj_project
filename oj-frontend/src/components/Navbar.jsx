@@ -1,28 +1,25 @@
 import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import logo from "../assets/android-chrome-192x192.png";
 import { useState } from "react";
 import DarkModeToggle from "./DarkModeToggle";
+import Logo from "./Logo";
 
 const Navbar = () => {
   const { user, logout } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   return (
-    <nav className="bg-blue-600 dark:bg-gray-800 text-white p-4 transition-colors duration-300">
+    <nav className="bg-gradient-to-r from-blue-600 to-indigo-700 dark:from-gray-800 dark:to-gray-900 text-white p-4 transition-colors duration-300 shadow-lg">
       <div className="container mx-auto">
         <div className="flex justify-between items-center">
-          <Link to="/" className="flex items-center gap-2">
-            <img src={logo} alt="CodeArena Logo" className="w-8 h-8" />
-            <span className="text-2xl font-bold">CodeArena</span>
-          </Link>
+          <Logo />
 
           {/* Mobile menu button and dark mode toggle */}
           <div className="md:hidden flex items-center gap-2">
             <DarkModeToggle />
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-lg hover:bg-blue-700 dark:hover:bg-gray-700 transition duration-200"
+              className="p-2 rounded-lg hover:bg-blue-500/20 dark:hover:bg-gray-700/50 transition duration-200"
             >
               <svg
                 className="w-6 h-6"

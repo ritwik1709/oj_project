@@ -127,38 +127,38 @@ const ProblemForm = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-3xl font-bold mb-6">
+      <h1 className="text-3xl font-bold mb-6 text-gray-900 dark:text-white">
         {id ? 'Edit Problem' : 'Create New Problem'}
       </h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700">Title</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
           <input
             type="text"
             value={problem.title}
             onChange={(e) => setProblem({ ...problem, title: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Description</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
           <textarea
             value={problem.description}
             onChange={(e) => setProblem({ ...problem, description: e.target.value })}
             rows={6}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700">Difficulty</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Difficulty</label>
           <select
             value={problem.difficulty}
             onChange={(e) => setProblem({ ...problem, difficulty: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
           >
             <option value="Easy">Easy</option>
             <option value="Medium">Medium</option>
@@ -167,32 +167,34 @@ const ProblemForm = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Sample Test Cases</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Sample Test Cases</label>
           {problem.sampleTestCases.map((testCase, index) => (
-            <div key={index} className="flex gap-4 mb-4">
+            <div key={index} className="flex flex-col gap-4 mb-4">
               <div className="flex-1">
-                <input
-                  type="text"
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Input</label>
+                <textarea
                   value={testCase.input}
                   onChange={(e) => handleTestCaseChange(index, 'input', e.target.value)}
-                  placeholder="Input"
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Enter test case input (multiple lines supported)"
+                  rows={4}
+                  className="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
                 />
               </div>
               <div className="flex-1">
-                <input
-                  type="text"
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Output</label>
+                <textarea
                   value={testCase.output}
                   onChange={(e) => handleTestCaseChange(index, 'output', e.target.value)}
-                  placeholder="Output"
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Enter expected output"
+                  rows={2}
+                  className="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
                 />
               </div>
               {index > 0 && (
                 <button
                   type="button"
                   onClick={() => removeTestCase(index)}
-                  className="text-red-600 hover:text-red-800"
+                  className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 self-end"
                 >
                   Remove
                 </button>
@@ -202,39 +204,41 @@ const ProblemForm = () => {
           <button
             type="button"
             onClick={() => addTestCase('sample')}
-            className="text-blue-600 hover:text-blue-800"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
           >
             Add Sample Test Case
           </button>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Full Test Cases</label>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Full Test Cases</label>
           {problem.fullTestCases.map((testCase, index) => (
-            <div key={index} className="flex gap-4 mb-4">
+            <div key={index} className="flex flex-col gap-4 mb-4">
               <div className="flex-1">
-                <input
-                  type="text"
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Input</label>
+                <textarea
                   value={testCase.input}
                   onChange={(e) => handleTestCaseChange(index, 'input', e.target.value, 'full')}
-                  placeholder="Input"
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Enter test case input (multiple lines supported)"
+                  rows={4}
+                  className="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
                 />
               </div>
               <div className="flex-1">
-                <input
-                  type="text"
+                <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Output</label>
+                <textarea
                   value={testCase.output}
                   onChange={(e) => handleTestCaseChange(index, 'output', e.target.value, 'full')}
-                  placeholder="Output"
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                  placeholder="Enter expected output"
+                  rows={2}
+                  className="w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-blue-500 focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono"
                 />
               </div>
               {index > 0 && (
                 <button
                   type="button"
                   onClick={() => removeTestCase(index, 'full')}
-                  className="text-red-600 hover:text-red-800"
+                  className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 self-end"
                 >
                   Remove
                 </button>
@@ -244,7 +248,7 @@ const ProblemForm = () => {
           <button
             type="button"
             onClick={() => addTestCase('full')}
-            className="text-blue-600 hover:text-blue-800"
+            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
           >
             Add Full Test Case
           </button>
@@ -254,8 +258,10 @@ const ProblemForm = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`px-4 py-2 rounded text-white ${
-              loading ? 'bg-blue-400' : 'bg-blue-600 hover:bg-blue-700'
+            className={`px-4 py-2 rounded text-white transition-colors duration-200 ${
+              loading 
+                ? 'bg-blue-400 dark:bg-blue-500' 
+                : 'bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800'
             }`}
           >
             {loading ? 'Saving...' : id ? 'Update Problem' : 'Create Problem'}

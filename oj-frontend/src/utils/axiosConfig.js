@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 const instance = axios.create({
   baseURL: 'http://localhost:5000/api',
@@ -45,7 +46,7 @@ instance.interceptors.response.use(
       console.log('Unauthorized access, clearing session...');
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      // Use navigate instead of window.location for a smoother transition
+      // Redirect to login page
       window.location.href = '/login';
     }
     return Promise.reject(error);

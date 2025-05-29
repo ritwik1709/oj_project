@@ -12,6 +12,9 @@ const ProblemDetail = () => {
   const [loading, setLoading] = useState(true);
   const [output, setOutput] = useState(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showAIHint, setShowAIHint] = useState(false);
+  const [aiHint, setAIHint] = useState(null);
+  const [hasWrongSubmission, setHasWrongSubmission] = useState(false);
   const { darkMode } = useTheme();
 
   useEffect(() => {
@@ -63,6 +66,7 @@ const ProblemDetail = () => {
   const handleSubmit = async () => {
     setIsProcessing(true);
     setOutput(null);
+    setShowAIHint(false);
     try {
       const response = await axios.post('http://localhost:5000/api/submissions/submit', {
         problemId: id,
@@ -80,6 +84,14 @@ const ProblemDetail = () => {
         message: response.data.verdict,
         details: response.data.error || response.data.got || ''
       });
+
+      if (response.data.verdict !== 'Accepted') {
+        setHasWrongSubmission(true);
+        setAIHint(response.data.aiFeedback);
+      } else {
+        setHasWrongSubmission(false);
+        setAIHint(null);
+      }
     } catch (error) {
       setOutput({
         type: 'error',
@@ -89,6 +101,10 @@ const ProblemDetail = () => {
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleShowAIHint = () => {
+    setShowAIHint(true);
   };
 
   if (loading) {
@@ -123,9 +139,15 @@ const ProblemDetail = () => {
         <div className="mb-6">
           <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">Sample Test Cases</h3>
           {problem.sampleTestCases.map((testCase, index) => (
-            <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md mb-2">
-              <p className="text-gray-800 dark:text-gray-200"><strong>Input:</strong> {testCase.input}</p>
-              <p className="text-gray-800 dark:text-gray-200"><strong>Expected Output:</strong> {testCase.output}</p>
+            <div key={index} className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md mb-4">
+              <div className="mb-2">
+                <p className="text-gray-800 dark:text-gray-200 font-medium mb-1">Input:</p>
+                <pre className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 font-mono text-sm whitespace-pre-wrap">{testCase.input}</pre>
+              </div>
+              <div>
+                <p className="text-gray-800 dark:text-gray-200 font-medium mb-1">Expected Output:</p>
+                <pre className="bg-white dark:bg-gray-800 p-3 rounded border border-gray-200 dark:border-gray-600 text-gray-800 dark:text-gray-200 font-mono text-sm whitespace-pre-wrap">{testCase.output}</pre>
+              </div>
             </div>
           ))}
         </div>
@@ -170,26 +192,39 @@ const ProblemDetail = () => {
           >
             {isProcessing ? 'Submitting...' : 'Submit Solution'}
           </button>
+          {hasWrongSubmission && !showAIHint && (
+            <button
+              onClick={handleShowAIHint}
+              className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-700 dark:hover:bg-purple-800 text-white px-6 py-2 rounded"
+            >
+              Get AI Hint
+            </button>
+          )}
         </div>
 
         {output && (
-          <div className={`mt-6 p-4 rounded-md ${
+          <div className={`mt-4 p-4 rounded-lg ${
             output.type === 'success' 
-              ? 'bg-green-50 dark:bg-green-900/50 border border-green-200 dark:border-green-800' 
-              : 'bg-red-50 dark:bg-red-900/50 border border-red-200 dark:border-red-800'
+              ? 'bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800' 
+              : 'bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800'
           }`}>
-            <h4 className={`font-semibold ${
+            <h4 className={`font-semibold mb-2 ${
               output.type === 'success' 
                 ? 'text-green-800 dark:text-green-300' 
                 : 'text-red-800 dark:text-red-300'
             }`}>
               {output.message}
             </h4>
-            {output.type === 'success' && output.details && (
-              <pre className="mt-2 whitespace-pre-wrap text-sm text-gray-800 dark:text-gray-200">
-                {output.details}
-              </pre>
+            {output.details && (
+              <pre className="whitespace-pre-wrap text-sm">{output.details}</pre>
             )}
+          </div>
+        )}
+
+        {showAIHint && aiHint && (
+          <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800">
+            <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">AI Hint:</h4>
+            <p className="text-blue-700 dark:text-blue-200">{aiHint}</p>
           </div>
         )}
       </div>

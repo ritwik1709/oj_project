@@ -69,13 +69,6 @@ const Submissions = () => {
               </span>
             </div>
             
-            {submission.aiFeedback && submission.verdict !== 'Accepted' && (
-              <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800">
-                <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">AI Hint:</h4>
-                <p className="text-blue-700 dark:text-blue-200">{submission.aiFeedback}</p>
-              </div>
-            )}
-            
             <div className="mt-4 flex items-center justify-between text-sm">
               <div className="space-x-4">
                 <span className="text-gray-600 dark:text-gray-400">
