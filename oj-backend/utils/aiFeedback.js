@@ -1,8 +1,8 @@
-import { InferenceClient } from '@huggingface/inference';
+import { HfInference } from '@huggingface/inference';
 
 export const generateAIFeedback = async (code, language, verdict, testCase) => {
     try {
-        const client = new InferenceClient(process.env.HF_API_TOKEN);
+        const client = new HfInference(process.env.HF_API_TOKEN);
         
         const prompt = `As a programming mentor, analyze this code submission:
 Language: ${language}
@@ -21,16 +21,18 @@ Provide a helpful hint that:
 3. Gives a general direction without revealing the exact solution
 Keep the response concise and focused on the specific issue.`;
 
-        const chatCompletion = await client.chatCompletion({
-            provider: "hf-inference",
-            model: "meta-llama/Llama-3.1-8B-Instruct",
-            messages: [{
-                role: "user",
-                content: prompt
-            }]
+        const response = await client.textGeneration({
+            model: "meta-llama/Llama-2-7b-chat-hf",
+            inputs: prompt,
+            parameters: {
+                max_new_tokens: 250,
+                temperature: 0.7,
+                top_p: 0.95,
+                repetition_penalty: 1.1
+            }
         });
         
-        return chatCompletion.choices[0].message.content;
+        return response.generated_text;
     } catch (error) {
         console.error('AI Feedback Error:', error);
         // Provide more specific fallback messages based on the verdict
