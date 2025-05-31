@@ -47,11 +47,19 @@ const ProblemDetail = () => {
         }
       });
       
-      setOutput({
-        type: response.data.verdict === 'Accepted' ? 'success' : 'error',
-        message: response.data.verdict,
-        details: response.data.error || response.data.got || ''
-      });
+      if (response.data.verdict === 'Accepted') {
+        setOutput({
+          type: 'success',
+          message: 'Sample test cases passed successfully!',
+          details: null
+        });
+      } else {
+        setOutput({
+          type: 'error',
+          message: response.data.verdict,
+          details: response.data.error !== response.data.verdict ? response.data.error : null
+        });
+      }
     } catch (error) {
       setOutput({
         type: 'error',
@@ -82,7 +90,7 @@ const ProblemDetail = () => {
       setOutput({
         type: response.data.verdict === 'Accepted' ? 'success' : 'error',
         message: response.data.verdict,
-        details: response.data.error || response.data.got || ''
+        details: response.data.error !== response.data.verdict ? response.data.error : null
       });
 
       if (response.data.verdict !== 'Accepted') {
@@ -208,7 +216,7 @@ const ProblemDetail = () => {
               ? 'bg-green-50 dark:bg-green-900/30 border border-green-100 dark:border-green-800' 
               : 'bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800'
           }`}>
-            <h4 className={`font-semibold mb-2 ${
+            <h4 className={`font-semibold ${
               output.type === 'success' 
                 ? 'text-green-800 dark:text-green-300' 
                 : 'text-red-800 dark:text-red-300'
@@ -216,7 +224,9 @@ const ProblemDetail = () => {
               {output.message}
             </h4>
             {output.details && (
-              <pre className="whitespace-pre-wrap text-sm">{output.details}</pre>
+              <pre className="mt-2 whitespace-pre-wrap text-sm text-red-700 dark:text-red-300">
+                {output.details}
+              </pre>
             )}
           </div>
         )}

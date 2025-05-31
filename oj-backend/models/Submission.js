@@ -15,7 +15,7 @@ const submissionSchema = new mongoose.Schema({
 
   language: {
     type: String,
-    enum: ['cpp', 'java', 'javascript'],
+    enum: ['cpp', 'java', 'python'],
     required: true,
   },
 
@@ -32,6 +32,7 @@ const submissionSchema = new mongoose.Schema({
   resultOutput: {
     type: String,
   },
+
   aiFeedback: {
     type: String,
     default: null

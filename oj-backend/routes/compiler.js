@@ -4,6 +4,9 @@ import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
 import { fileURLToPath } from 'url';
+import { executeCpp, setStorageService as setCppStorageService } from '../utils/executeCpp.js';
+import { executePython, setStorageService as setPythonStorageService } from '../utils/executePython.js';
+import { executeJava, setStorageService as setJavaStorageService } from '../utils/executeJava.js';
 
 const router = express.Router();
 
@@ -23,6 +26,21 @@ const MAX_INPUT_LENGTH = 1000;
 
 // Maximum execution time (in milliseconds)
 const MAX_EXECUTION_TIME = 5000;
+
+// Initialize storage service for execution utilities
+router.use((req, res, next) => {
+  const storageService = req.app.locals.storageService;
+  if (!storageService) {
+    return res.status(500).json({ error: 'Storage service not initialized' });
+  }
+  
+  // Set storage service for all execution utilities
+  setCppStorageService(storageService);
+  setPythonStorageService(storageService);
+  setJavaStorageService(storageService);
+  
+  next();
+});
 
 router.post('/compile', async (req, res) => {
   const { code, input, language } = req.body;
