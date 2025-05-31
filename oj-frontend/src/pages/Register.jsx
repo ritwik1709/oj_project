@@ -1,6 +1,6 @@
 import { useState } from "react";
-import axios from "axios";
 import { useNavigate, Link } from "react-router-dom";
+import api from "../utils/axiosConfig";
 
 const Register = () => {
   const [username, setUsername] = useState("");
@@ -17,7 +17,7 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      await axios.post("http://localhost:5000/api/auth/register", {
+      await api.post("/auth/register", {
         username,
         email,
         password,

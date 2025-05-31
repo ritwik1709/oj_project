@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Link } from 'react-router-dom';
+import api from '../../utils/axiosConfig';
 
 const ProblemManagement = () => {
   const [problems, setProblems] = useState([]);
@@ -12,11 +12,7 @@ const ProblemManagement = () => {
 
   const fetchProblems = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/problems', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      const response = await api.get('/problems');
       setProblems(response.data);
     } catch (error) {
       console.error('Error fetching problems:', error);
@@ -29,11 +25,7 @@ const ProblemManagement = () => {
     if (!window.confirm('Are you sure you want to delete this problem?')) return;
 
     try {
-      await axios.delete(`http://localhost:5000/api/problems/${id}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
+      await api.delete(`/problems/${id}`);
       fetchProblems(); // Refresh the list
     } catch (error) {
       console.error('Error deleting problem:', error);

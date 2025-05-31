@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import Editor from '@monaco-editor/react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -19,7 +19,7 @@ const OnlineCompiler = () => {
 
     setIsLoading(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/compile', {
+      const response = await api.post('/compile', {
         code,
         input,
         language

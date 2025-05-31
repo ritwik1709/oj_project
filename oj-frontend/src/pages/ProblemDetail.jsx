@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import CodeEditor from '../components/CodeEditor';
 import { useTheme } from '../context/ThemeContext';
 
@@ -20,7 +20,7 @@ const ProblemDetail = () => {
   useEffect(() => {
     const fetchProblem = async () => {
       try {
-        const response = await axios.get(`http://localhost:5000/api/problems/${id}`);
+        const response = await api.get(`/problems/${id}`);
         setProblem(response.data);
       } catch (error) {
         console.error('Error fetching problem:', error);
@@ -36,7 +36,7 @@ const ProblemDetail = () => {
     setIsProcessing(true);
     setOutput(null);
     try {
-      const response = await axios.post('http://localhost:5000/api/submissions/submit', {
+      const response = await api.post('/submissions/submit', {
         problemId: id,
         code,
         language,
@@ -76,7 +76,7 @@ const ProblemDetail = () => {
     setOutput(null);
     setShowAIHint(false);
     try {
-      const response = await axios.post('http://localhost:5000/api/submissions/submit', {
+      const response = await api.post('/submissions/submit', {
         problemId: id,
         code,
         language,
