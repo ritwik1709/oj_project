@@ -18,17 +18,38 @@ const OnlineCompiler = () => {
     }
 
     setIsLoading(true);
+    setOutput('');
     try {
-      const response = await api.post('/compile', {
+      console.log('Running code with:', {
+        code,
+        input,
+        language,
+        baseURL: api.defaults.baseURL
+      });
+      
+      const response = await api.post('/submissions/compile', {
         code,
         input,
         language
       });
-      setOutput(response.data.output);
+      
+      console.log('Compilation response:', response.data);
+      
+      if (response.data.error) {
+        setOutput(`Error: ${response.data.error}`);
+      } else {
+        setOutput(response.data.output || 'No output');
+      }
     } catch (error) {
-      setOutput(error.response?.data?.error || 'An error occurred');
+      console.error('Compilation error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      setOutput(error.response?.data?.error || 'An error occurred while running the code');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   const getMonacoLanguage = () => {

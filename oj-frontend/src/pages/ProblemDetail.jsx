@@ -33,25 +33,38 @@ const ProblemDetail = () => {
   }, [id]);
 
   const handleRun = async () => {
+    if (!code.trim()) {
+      setOutput({
+        type: 'error',
+        message: 'Please enter some code to run',
+        details: null
+      });
+      return;
+    }
+
     setIsProcessing(true);
     setOutput(null);
     try {
+      console.log('Running code for problem:', {
+        problemId: id,
+        language,
+        baseURL: api.defaults.baseURL
+      });
+
       const response = await api.post('/submissions/submit', {
         problemId: id,
         code,
         language,
         mode: 'run'
-      }, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
       });
+      
+      console.log('Run response:', response.data);
       
       if (response.data.verdict === 'Accepted') {
         setOutput({
           type: 'success',
           message: 'Sample test cases passed successfully!',
-          details: null
+          details: response.data.output || null
         });
       } else {
         setOutput({
@@ -61,6 +74,11 @@ const ProblemDetail = () => {
         });
       }
     } catch (error) {
+      console.error('Run error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       setOutput({
         type: 'error',
         message: 'Error running code',
@@ -72,20 +90,33 @@ const ProblemDetail = () => {
   };
 
   const handleSubmit = async () => {
+    if (!code.trim()) {
+      setOutput({
+        type: 'error',
+        message: 'Please enter some code to submit',
+        details: null
+      });
+      return;
+    }
+
     setIsProcessing(true);
     setOutput(null);
     setShowAIHint(false);
     try {
+      console.log('Submitting code for problem:', {
+        problemId: id,
+        language,
+        baseURL: api.defaults.baseURL
+      });
+
       const response = await api.post('/submissions/submit', {
         problemId: id,
         code,
         language,
         mode: 'submit'
-      }, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
       });
+      
+      console.log('Submit response:', response.data);
       
       setOutput({
         type: response.data.verdict === 'Accepted' ? 'success' : 'error',
@@ -101,6 +132,11 @@ const ProblemDetail = () => {
         setAIHint(null);
       }
     } catch (error) {
+      console.error('Submit error:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
       setOutput({
         type: 'error',
         message: 'Submission failed',

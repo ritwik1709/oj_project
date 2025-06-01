@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../utils/axiosConfig';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import Toast from '../components/Toast';
@@ -15,14 +15,26 @@ const Submissions = () => {
   useEffect(() => {
     const fetchSubmissions = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/submissions/my-submissions', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        });
+        console.log('Fetching submissions from:', api.defaults.baseURL);
+        const response = await api.get('/submissions/my-submissions');
+        console.log('Submissions response:', response.data);
         setSubmissions(response.data);
       } catch (error) {
-        console.error('Error fetching submissions:', error);
+        console.error('Error fetching submissions:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          headers: error.response?.headers,
+          config: {
+            url: error.config?.url,
+            baseURL: error.config?.baseURL,
+            headers: error.config?.headers
+          }
+        });
+        setToast({
+          message: error.response?.data?.message || 'Failed to fetch submissions',
+          type: 'error'
+        });
       } finally {
         setLoading(false);
       }
