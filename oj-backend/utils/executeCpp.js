@@ -54,7 +54,8 @@ export const executeCpp = async (code, input) => {
           if (err) {
             console.error('Docker pull error:', err);
             console.error('Docker pull stderr:', stderr);
-            reject(new Error(`Failed to pull Docker image: ${err.message}`));
+            console.error('Docker pull stdout:', stdout);
+            reject(new Error(`Failed to pull Docker image: ${err.message}\nStderr: ${stderr}\nStdout: ${stdout}`));
           } else {
             console.log('Docker image pulled successfully:', stdout);
             resolve();
@@ -63,7 +64,14 @@ export const executeCpp = async (code, input) => {
       });
     } catch (pullError) {
       console.error('Error pulling Docker image:', pullError);
-      throw { error: `Docker image pull failed: ${pullError.message}` };
+      throw { 
+        error: `Docker image pull failed: ${pullError.message}`,
+        details: {
+          image: imageName,
+          registry: process.env.DOCKER_REGISTRY || 'not set',
+          error: pullError.message
+        }
+      };
     }
 
     return new Promise((resolve, reject) => {
@@ -90,17 +98,34 @@ export const executeCpp = async (code, input) => {
             // Check if it's a timeout error
             if (err.killed) {
               console.log('Timeout error detected');
-              return reject({ error: "Time Limit Exceeded" });
+              return reject({ 
+                error: "Time Limit Exceeded",
+                details: { stdout, stderr }
+              });
             }
             // Check if it's a Docker error
             if (err.message.includes('docker')) {
               console.error('Docker error:', err);
-              return reject({ error: "Docker execution failed. Please try again." });
+              return reject({ 
+                error: "Docker execution failed. Please try again.",
+                details: {
+                  stdout,
+                  stderr,
+                  error: err.message
+                }
+              });
             }
             // Return the error message from stderr if available
             const errorMessage = stderr || err.message;
             console.log('Error message:', errorMessage);
-            return reject({ error: errorMessage });
+            return reject({ 
+              error: errorMessage,
+              details: {
+                stdout,
+                stderr,
+                error: err.message
+              }
+            });
           }
 
           // Update job access time
@@ -112,7 +137,14 @@ export const executeCpp = async (code, input) => {
           resolve(output);
         } catch (error) {
           console.error('Error in execution handler:', error);
-          reject({ error: "Failed to execute code: " + error.message });
+          reject({ 
+            error: "Failed to execute code: " + error.message,
+            details: {
+              stdout,
+              stderr,
+              error: error.message
+            }
+          });
         } finally {
           // Clean up using enhanced storage service
           console.log('Cleaning up job:', jobId);
@@ -124,6 +156,9 @@ export const executeCpp = async (code, input) => {
     console.error('Error in C++ execution:', error);
     // Ensure cleanup on error
     await storageService.cleanupJob(jobId);
-    throw { error: "Failed to execute C++ code: " + error.message };
+    throw { 
+      error: "Failed to execute C++ code: " + (error.error || error.message),
+      details: error.details || { error: error.message }
+    };
   }
 };

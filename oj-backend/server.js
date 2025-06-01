@@ -55,51 +55,61 @@ app.use(cors({
 // Handle preflight requests
 app.options('*', cors());
 
-// Initialize storage service
-const storageService = new EnhancedStorageService();
-app.locals.storageService = storageService;
+// Initialize the server
+async function initializeServer() {
+  try {
+    // Initialize storage service
+    const storageService = new EnhancedStorageService();
+    await storageService.initialize();
+    app.locals.storageService = storageService;
+    console.log('Storage service initialized successfully');
 
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/problems", problemRoutes);
-app.use("/api/submissions", submissionRoutes);
-app.use("/api/admin", authMiddleware, adminRoutes);
+    // Connect to MongoDB
+    const MONGO_URI = process.env.MONGO_URI;
+    if (!MONGO_URI) {
+      throw new Error('MONGO_URI is not defined in environment variables');
+    }
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
-});
+    await mongoose.connect(MONGO_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    });
+    console.log('Connected to MongoDB');
 
-// Connect to MongoDB
-const MONGO_URI = process.env.MONGO_URI;
-if (!MONGO_URI) {
-  console.error('MONGO_URI is not defined in environment variables');
-  process.exit(1);
+    // Routes
+    app.use("/api/auth", authRoutes);
+    app.use("/api/problems", problemRoutes);
+    app.use("/api/submissions", submissionRoutes);
+    app.use("/api/admin", authMiddleware, adminRoutes);
+
+    // Health check endpoint
+    app.get('/health', (req, res) => {
+      res.status(200).json({ status: 'ok' });
+    });
+
+    // Error handling middleware
+    app.use((err, req, res, next) => {
+      console.error(err.stack);
+      res.status(500).json({ message: 'Something went wrong!' });
+    });
+
+    // Start the server
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Failed to initialize server:', error);
+    process.exit(1);
+  }
 }
 
-mongoose.connect(MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
-  socketTimeoutMS: 45000, // Close sockets after 45s of inactivity
-})
-.then(() => {
-  console.log('Connected to MongoDB');
-  // Start the server
-  const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
-})
-.catch((error) => {
-  console.error('MongoDB connection error:', error);
+// Start the server
+initializeServer().catch(error => {
+  console.error('Server initialization failed:', error);
   process.exit(1);
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something went wrong!' });
 });
 
 export default app;

@@ -72,13 +72,49 @@ const executeCode = async (language, code, input) => {
         return { success: true, output };
     } catch (error) {
         console.error('Execution error:', error);
+        console.error('Error details:', error.details);
+        
+        // Handle Docker image pull errors
+        if (error.details && error.details.image) {
+            return { 
+                success: false, 
+                verdict: VERDICT.COMPILATION_ERROR, 
+                error: `Docker image not available: ${error.details.image}. Please contact support.`,
+                details: error.details
+            };
+        }
+        
+        // Handle timeout errors
         if (error.error && error.error.includes('Time Limit Exceeded')) {
-            return { success: false, verdict: VERDICT.TIME_LIMIT_EXCEEDED };
+            return { 
+                success: false, 
+                verdict: VERDICT.TIME_LIMIT_EXCEEDED,
+                details: error.details
+            };
         }
+        
+        // Handle compilation and runtime errors
         if (error.error && (error.error.includes('error') || error.error.includes('Error'))) {
-            return { success: false, verdict: VERDICT.RUNTIME_ERROR, error: error.error };
+            const isCompilationError = error.error.toLowerCase().includes('compilation') || 
+                                     error.error.toLowerCase().includes('compile') ||
+                                     (error.details && error.details.stderr && 
+                                      error.details.stderr.toLowerCase().includes('compilation'));
+            
+            return { 
+                success: false, 
+                verdict: isCompilationError ? VERDICT.COMPILATION_ERROR : VERDICT.RUNTIME_ERROR, 
+                error: error.error,
+                details: error.details
+            };
         }
-        return { success: false, verdict: VERDICT.COMPILATION_ERROR, error: error.error };
+        
+        // Default to compilation error for unknown errors
+        return { 
+            success: false, 
+            verdict: VERDICT.COMPILATION_ERROR, 
+            error: error.error || 'Unknown error occurred',
+            details: error.details
+        };
     }
 };
 
@@ -97,7 +133,8 @@ export const judge = async (code, language, testCases) => {
             return {
                 verdict: result.verdict,
                 failedTestCase: i + 1,
-                error: result.error
+                error: result.error,
+                details: result.details
             };
         }
 
