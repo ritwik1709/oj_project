@@ -28,6 +28,7 @@ export const executePython = async (code, input) => {
 
   const codePath = path.join(jobDir, "code.py");
   const inputPath = path.join(jobDir, "input.txt");
+  const outputPath = path.join(jobDir, "output.txt");
 
   try {
     // Write code and input to files
@@ -35,19 +36,19 @@ export const executePython = async (code, input) => {
     await fs.writeFile(inputPath, input || '');
     console.log('Files written successfully');
 
-    // Verify file contents
-    const writtenCode = await fs.readFile(codePath, 'utf8');
-    const writtenInput = await fs.readFile(inputPath, 'utf8');
-    console.log('Written code:', writtenCode);
-    console.log('Written input:', writtenInput);
+    // Copy run.sh to the job directory
+    const runScriptPath = path.join(__dirname, '../judge/python-runner/run.sh');
+    const jobRunScriptPath = path.join(jobDir, 'run.sh');
+    await fs.copyFile(runScriptPath, jobRunScriptPath);
+    await fs.chmod(jobRunScriptPath, '755'); // Make it executable
 
     return new Promise((resolve, reject) => {
       // Create absolute paths for Docker volume mounting
       const absoluteJobDir = path.resolve(jobDir);
       console.log('Absolute job directory:', absoluteJobDir);
       
-      // Use python3 with -u flag for unbuffered output and proper error handling
-      const command = `docker run --rm -v "${absoluteJobDir}:/app" python-runner bash -c "cd /app && python3 -u code.py < input.txt 2>&1"`;
+      // Set CODE environment variable and run the script
+      const command = `docker run --rm -v "${absoluteJobDir}:/app" -e CODE="${code.replace(/"/g, '\\"')}" python-runner bash /app/run.sh`;
 
       console.log('Executing command:', command);
 
@@ -76,9 +77,10 @@ export const executePython = async (code, input) => {
           // Update job access time
           await storageService.updateJobAccess(jobId);
 
-          // Return the stdout directly
-          console.log('Execution successful, output:', stdout);
-          resolve(stdout);
+          // Read the output file
+          const output = await fs.readFile(outputPath, 'utf8');
+          console.log('Execution successful, output:', output);
+          resolve(output);
         } catch (error) {
           console.error('Error in execution handler:', error);
           reject({ error: "Failed to execute code: " + error.message });

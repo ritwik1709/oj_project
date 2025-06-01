@@ -6,16 +6,30 @@ import { generateAIFeedback } from '../utils/aiFeedback.js';
 // Submit Code (Run or Submit)
 export const submitCode = async (req, res) => {
   try {
-    const { problemId, language, code, mode } = req.body;
+    const { problemId, language, code, mode, isOnlineCompiler, input } = req.body;
     const userId = req.user.id;
 
-    const problem = await Problem.findById(problemId);
-    if (!problem) return res.status(404).json({ message: 'Problem not found' });
+    // For online compiler, we don't need problemId
+    if (!isOnlineCompiler && !problemId) {
+      return res.status(400).json({ message: 'Problem ID is required for problem submissions' });
+    }
 
-    // Ensure test cases exist and are not empty
-    const testCases = mode === 'run' ? problem.sampleTestCases : problem.fullTestCases;
-    if (!testCases || testCases.length === 0) {
-      return res.status(400).json({ message: 'No test cases available' });
+    let testCases = [];
+    if (isOnlineCompiler) {
+      // For online compiler, use the provided input as a single test case
+      testCases = [{
+        input: input || '',
+        output: '' // No expected output for online compiler
+      }];
+    } else {
+      // For problem submissions, get test cases from the problem
+      const problem = await Problem.findById(problemId);
+      if (!problem) return res.status(404).json({ message: 'Problem not found' });
+      testCases = mode === 'run' ? problem.sampleTestCases : problem.fullTestCases;
+      
+      if (!testCases || testCases.length === 0) {
+        return res.status(400).json({ message: 'No test cases available' });
+      }
     }
 
     console.log('Test Cases:', testCases); // Debug log
@@ -23,9 +37,9 @@ export const submitCode = async (req, res) => {
     // Judge the submission
     const result = await judge(code, language, testCases);
     
-    // Generate AI feedback if verdict is not Accepted
+    // Generate AI feedback if verdict is not Accepted and it's not an online compiler submission
     let aiFeedback = null;
-    if (result.verdict !== 'Accepted' && mode !== 'run') {
+    if (!isOnlineCompiler && result.verdict !== 'Accepted' && mode !== 'run') {
       const failedTestCase = testCases[result.failedTestCase - 1];
       if (failedTestCase) {
         const testCaseWithOutput = {
@@ -37,8 +51,8 @@ export const submitCode = async (req, res) => {
       }
     }
 
-    // Save submission if it's not in run mode
-    if (mode !== 'run') {
+    // Save submission if it's not in run mode and not an online compiler submission
+    if (!isOnlineCompiler && mode !== 'run') {
       const submission = new Submission({
         userId,
         problemId,
