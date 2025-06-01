@@ -5,14 +5,28 @@ import ProblemCard from '../components/ProblemCard';
 const ProblemList = () => {
   const [problems, setProblems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchProblems = async () => {
       try {
+        console.log('Fetching problems from:', api.defaults.baseURL);
         const response = await api.get('/problems');
+        console.log('Problems response:', response.data);
         setProblems(response.data);
       } catch (error) {
-        console.error('Error fetching problems:', error);
+        console.error('Error fetching problems:', {
+          message: error.message,
+          response: error.response?.data,
+          status: error.response?.status,
+          headers: error.response?.headers,
+          config: {
+            url: error.config?.url,
+            baseURL: error.config?.baseURL,
+            headers: error.config?.headers
+          }
+        });
+        setError(error.response?.data?.message || 'Failed to fetch problems');
       } finally {
         setLoading(false);
       }
@@ -25,6 +39,17 @@ const ProblemList = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-blue-400"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <h2 className="text-red-800 dark:text-red-300 font-semibold">Error</h2>
+          <p className="text-red-700 dark:text-red-400">{error}</p>
+        </div>
       </div>
     );
   }
