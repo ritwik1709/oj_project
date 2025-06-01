@@ -6,6 +6,7 @@ import authRoutes from './routes/authRoutes.js';
 import problemRoutes from './routes/problemRoutes.js';
 import submissionRoutes from './routes/submissionRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import compilerRoutes from './routes/compiler.js';
 import { authMiddleware } from './middlewares/authMiddleware.js';
 import { EnhancedStorageService } from './services/enhanced-storage-service.js';
 
@@ -83,6 +84,7 @@ async function initializeServer() {
     app.use("/api/problems", problemRoutes);
     app.use("/api/submissions", submissionRoutes);
     app.use("/api/admin", authMiddleware, adminRoutes);
+    app.use("/api/compiler", compilerRoutes);
 
     // Health check endpoint
     app.get('/health', (req, res) => {
