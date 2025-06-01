@@ -42,13 +42,35 @@ export const executeJava = async (code, input) => {
     await fs.copyFile(runScriptPath, jobRunScriptPath);
     await fs.chmod(jobRunScriptPath, '755'); // Make it executable
 
+    // First, try to pull the Docker image
+    const imageName = `${process.env.DOCKER_REGISTRY || ''}java-runner:latest`;
+    console.log('Pulling Docker image:', imageName);
+    
+    try {
+      await new Promise((resolve, reject) => {
+        exec(`docker pull ${imageName}`, (err, stdout, stderr) => {
+          if (err) {
+            console.error('Docker pull error:', err);
+            console.error('Docker pull stderr:', stderr);
+            reject(new Error(`Failed to pull Docker image: ${err.message}`));
+          } else {
+            console.log('Docker image pulled successfully:', stdout);
+            resolve();
+          }
+        });
+      });
+    } catch (pullError) {
+      console.error('Error pulling Docker image:', pullError);
+      throw { error: `Docker image pull failed: ${pullError.message}` };
+    }
+
     return new Promise((resolve, reject) => {
       // Create absolute paths for Docker volume mounting
       const absoluteJobDir = path.resolve(jobDir);
       console.log('Absolute job directory:', absoluteJobDir);
       
       // Use Docker Hub image
-      const command = `docker run --rm -v "${absoluteJobDir}:/app" -e CODE="${code.replace(/"/g, '\\"')}" ${process.env.DOCKER_REGISTRY || ''}java-runner:latest bash /app/run.sh`;
+      const command = `docker run --rm -v "${absoluteJobDir}:/app" -e CODE="${code.replace(/"/g, '\\"')}" ${imageName} bash /app/run.sh`;
 
       console.log('Executing command:', command);
 
