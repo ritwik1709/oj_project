@@ -19,7 +19,7 @@ export const executePython = async (code, input) => {
   }
 
   console.log('Python Execution - Starting');
-  console.log('Code:', code);
+  console.log('Code length:', code.length);
   console.log('Input:', input);
 
   // Create job directory using enhanced storage service
@@ -47,8 +47,8 @@ export const executePython = async (code, input) => {
       const absoluteJobDir = path.resolve(jobDir);
       console.log('Absolute job directory:', absoluteJobDir);
       
-      // Set CODE environment variable and run the script
-      const command = `docker run --rm -v "${absoluteJobDir}:/app" -e CODE="${code.replace(/"/g, '\\"')}" python-runner bash /app/run.sh`;
+      // Use Docker Hub image
+      const command = `docker run --rm -v "${absoluteJobDir}:/app" -e CODE="${code.replace(/"/g, '\\"')}" ${process.env.DOCKER_REGISTRY || ''}python-runner:latest bash /app/run.sh`;
 
       console.log('Executing command:', command);
 
@@ -67,6 +67,11 @@ export const executePython = async (code, input) => {
             if (err.killed) {
               console.log('Timeout error detected');
               return reject({ error: "Time Limit Exceeded" });
+            }
+            // Check if it's a Docker error
+            if (err.message.includes('docker')) {
+              console.error('Docker error:', err);
+              return reject({ error: "Docker execution failed. Please try again." });
             }
             // Return the error message from stderr if available
             const errorMessage = stderr || err.message;

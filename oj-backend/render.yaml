@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: online-judge-backend
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: FRONTEND_URL
+        value: https://online-judge-frontend-1jhg.onrender.com
+      - key: DOCKER_REGISTRY
+        sync: false
+    docker:
+      enabled: true
+      dockerfilePath: ./Dockerfile 

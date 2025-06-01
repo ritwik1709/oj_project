@@ -19,16 +19,23 @@ export const executeCpp = async (code, input) => {
     throw new Error('Storage service not initialized');
   }
 
+  console.log('C++ Execution - Starting');
+  console.log('Code length:', code.length);
+  console.log('Input:', input);
+
   // Create job directory using enhanced storage service
   const { jobId, jobDir } = await storageService.createJobDirectory();
+  console.log('Job Directory:', jobDir);
 
   const codePath = path.join(jobDir, "code.cpp");
   const inputPath = path.join(jobDir, "input.txt");
   const outputPath = path.join(jobDir, "output.txt");
 
   try {
+    // Write code and input to files
     await fs.writeFile(codePath, code);
-    await fs.writeFile(inputPath, input);
+    await fs.writeFile(inputPath, input || '');
+    console.log('Files written successfully');
 
     // Copy run.sh to the job directory
     const runScriptPath = path.join(__dirname, '../judge/cpp-runner/run.sh');
@@ -39,18 +46,38 @@ export const executeCpp = async (code, input) => {
     return new Promise((resolve, reject) => {
       // Create absolute paths for Docker volume mounting
       const absoluteJobDir = path.resolve(jobDir);
+      console.log('Absolute job directory:', absoluteJobDir);
       
-      // Set CODE environment variable and run the script
-      const command = `docker run --rm -v "${absoluteJobDir}:/app" -e CODE="${code.replace(/"/g, '\\"')}" cpp-runner bash /app/run.sh`;
+      // Use Docker Hub image
+      const command = `docker run --rm -v "${absoluteJobDir}:/app" -e CODE="${code.replace(/"/g, '\\"')}" ${process.env.DOCKER_REGISTRY || ''}cpp-runner:latest bash /app/run.sh`;
 
       console.log('Executing command:', command);
 
-      exec(command, { maxBuffer: 1024 * 500 }, async (err, stdout, stderr) => {
+      exec(command, { 
+        maxBuffer: 1024 * 500,
+        timeout: 5000 // 5 second timeout
+      }, async (err, stdout, stderr) => {
+        console.log('Execution completed');
+        console.log('stdout:', stdout);
+        console.log('stderr:', stderr);
+        console.log('error:', err);
+
         try {
           if (err) {
-            console.error('Execution error:', err);
-            console.error('stderr:', stderr);
-            return reject({ error: stderr || "Execution error" });
+            // Check if it's a timeout error
+            if (err.killed) {
+              console.log('Timeout error detected');
+              return reject({ error: "Time Limit Exceeded" });
+            }
+            // Check if it's a Docker error
+            if (err.message.includes('docker')) {
+              console.error('Docker error:', err);
+              return reject({ error: "Docker execution failed. Please try again." });
+            }
+            // Return the error message from stderr if available
+            const errorMessage = stderr || err.message;
+            console.log('Error message:', errorMessage);
+            return reject({ error: errorMessage });
           }
 
           // Update job access time
@@ -61,10 +88,11 @@ export const executeCpp = async (code, input) => {
           console.log('Execution successful, output:', output);
           resolve(output);
         } catch (error) {
-          console.error('Error reading output:', error);
-          reject({ error: "Failed to read output" });
+          console.error('Error in execution handler:', error);
+          reject({ error: "Failed to execute code: " + error.message });
         } finally {
           // Clean up using enhanced storage service
+          console.log('Cleaning up job:', jobId);
           await storageService.cleanupJob(jobId);
         }
       });
@@ -73,6 +101,6 @@ export const executeCpp = async (code, input) => {
     console.error('Error in C++ execution:', error);
     // Ensure cleanup on error
     await storageService.cleanupJob(jobId);
-    throw error;
+    throw { error: "Failed to execute C++ code: " + error.message };
   }
 };
