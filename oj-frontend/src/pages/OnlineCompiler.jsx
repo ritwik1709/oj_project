@@ -27,20 +27,21 @@ const OnlineCompiler = () => {
         baseURL: api.defaults.baseURL
       });
       
-      const response = await api.post('/submissions/submit', {
+      const response = await api.post('/compiler/compile', {
         code,
         input,
-        language,
-        mode: 'run',
-        isOnlineCompiler: true // Add flag to identify online compiler submissions
+        language
       });
       
       console.log('Compilation response:', response.data);
       
-      if (response.data.verdict === 'Accepted') {
-        setOutput(response.data.output || 'No output');
+      if (response.data.error) {
+        setOutput(`Error: ${response.data.error}`);
+        if (response.data.details) {
+          setOutput(prev => prev + '\n\nDetails:\n' + response.data.details);
+        }
       } else {
-        setOutput(`Error: ${response.data.error || response.data.verdict}`);
+        setOutput(response.data.output || 'No output');
       }
     } catch (error) {
       console.error('Compilation error:', {
