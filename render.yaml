@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: oj-backend
+    env: node
+    buildCommand: chmod +x ./oj-backend/build.sh && ./oj-backend/build.sh
+    startCommand: cd oj-backend && npm start
+    envVars:
+      # Non-sensitive configuration variables
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: CORS_ORIGIN
+        value: https://online-judge-frontend-1jhg.onrender.com
+      - key: MAX_FILE_SIZE
+        value: 1048576
+      - key: MAX_FILES
+        value: 10
+      - key: CLEANUP_INTERVAL
+        value: 3600000
+      - key: MAX_JOB_AGE
+        value: 86400000
+      - key: LOG_LEVEL
+        value: info
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=512
+      
+      # Sensitive variables - set these in Render dashboard
+      # - key: MONGO_URI
+      #   sync: false
+      # - key: JWT_SECRET
+      #   sync: false

@@ -36,73 +36,32 @@ export const executePython = async (code, input) => {
     await fs.writeFile(inputPath, input || '');
     console.log('Files written successfully');
 
-    // Copy run.sh to the job directory
-    const runScriptPath = path.join(__dirname, '../judge/python-runner/run.sh');
-    const jobRunScriptPath = path.join(jobDir, 'run.sh');
-    await fs.copyFile(runScriptPath, jobRunScriptPath);
-    await fs.chmod(jobRunScriptPath, '755'); // Make it executable
-
-    // First, try to pull the Docker image
-    const imageName = `${process.env.DOCKER_REGISTRY || ''}python-runner:latest`;
-    console.log('Pulling Docker image:', imageName);
-    
-    try {
-      await new Promise((resolve, reject) => {
-        exec(`docker pull ${imageName}`, (err, stdout, stderr) => {
-          if (err) {
-            console.error('Docker pull error:', err);
-            console.error('Docker pull stderr:', stderr);
-            reject(new Error(`Failed to pull Docker image: ${err.message}`));
-          } else {
-            console.log('Docker image pulled successfully:', stdout);
-            resolve();
-          }
-        });
-      });
-    } catch (pullError) {
-      console.error('Error pulling Docker image:', pullError);
-      throw { error: `Docker image pull failed: ${pullError.message}` };
-    }
-
     return new Promise((resolve, reject) => {
-      // Create absolute paths for Docker volume mounting
-      const absoluteJobDir = path.resolve(jobDir);
-      console.log('Absolute job directory:', absoluteJobDir);
-      
-      // Use Docker Hub image
-      const command = `docker run --rm -v "${absoluteJobDir}:/app" -e CODE="${code.replace(/"/g, '\\"')}" ${imageName} bash /app/run.sh`;
-
-      console.log('Executing command:', command);
-
-      exec(command, { 
-        maxBuffer: 1024 * 500,
+      // Run the Python code
+      exec(`python3 "${codePath}" < "${inputPath}" > "${outputPath}"`, { 
         timeout: 5000 // 5 second timeout
-      }, async (err, stdout, stderr) => {
-        console.log('Execution completed');
-        console.log('stdout:', stdout);
-        console.log('stderr:', stderr);
-        console.log('error:', err);
-
+      }, async (runErr, runStdout, runStderr) => {
         try {
-          if (err) {
-            // Check if it's a timeout error
-            if (err.killed) {
+          if (runErr) {
+            if (runErr.killed) {
               console.log('Timeout error detected');
-              return reject({ error: "Time Limit Exceeded" });
+              await storageService.cleanupJob(jobId);
+              return reject({ 
+                error: "Time Limit Exceeded",
+                details: { stdout: runStdout, stderr: runStderr }
+              });
             }
-            // Check if it's a Docker error
-            if (err.message.includes('docker')) {
-              console.error('Docker error:', err);
-              return reject({ error: "Docker execution failed. Please try again." });
-            }
-            // Return the error message from stderr if available
-            const errorMessage = stderr || err.message;
-            console.log('Error message:', errorMessage);
-            return reject({ error: errorMessage });
+            console.error('Runtime error:', runErr);
+            console.error('Runtime stderr:', runStderr);
+            await storageService.cleanupJob(jobId);
+            return reject({ 
+              error: "Runtime Error",
+              details: {
+                stderr: runStderr,
+                error: runErr.message
+              }
+            });
           }
-
-          // Update job access time
-          await storageService.updateJobAccess(jobId);
 
           // Read the output file
           const output = await fs.readFile(outputPath, 'utf8');
@@ -110,7 +69,15 @@ export const executePython = async (code, input) => {
           resolve(output);
         } catch (error) {
           console.error('Error in execution handler:', error);
-          reject({ error: "Failed to execute code: " + error.message });
+          await storageService.cleanupJob(jobId);
+          reject({ 
+            error: "Failed to execute code: " + error.message,
+            details: {
+              stdout: runStdout,
+              stderr: runStderr,
+              error: error.message
+            }
+          });
         } finally {
           // Clean up using enhanced storage service
           console.log('Cleaning up job:', jobId);
@@ -122,6 +89,9 @@ export const executePython = async (code, input) => {
     console.error('Error in Python execution:', error);
     // Ensure cleanup on error
     await storageService.cleanupJob(jobId);
-    throw { error: "Failed to execute Python code: " + error.message };
+    throw { 
+      error: "Failed to execute Python code: " + (error.error || error.message),
+      details: error.details || { error: error.message }
+    };
   }
 };
