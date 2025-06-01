@@ -48,6 +48,7 @@ const ProblemDetail = () => {
       console.log('Running code for problem:', {
         problemId: id,
         language,
+        codeLength: code.length,
         baseURL: api.defaults.baseURL
       });
 
@@ -55,7 +56,8 @@ const ProblemDetail = () => {
         problemId: id,
         code,
         language,
-        mode: 'run'
+        mode: 'run',
+        isOnlineCompiler: false
       });
       
       console.log('Run response:', response.data);
@@ -70,19 +72,41 @@ const ProblemDetail = () => {
         setOutput({
           type: 'error',
           message: response.data.verdict,
-          details: response.data.error !== response.data.verdict ? response.data.error : null
+          details: response.data.error || response.data.output || null
         });
       }
     } catch (error) {
       console.error('Run error:', {
         message: error.message,
         response: error.response?.data,
-        status: error.response?.status
+        status: error.response?.status,
+        headers: error.response?.headers,
+        config: {
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          headers: error.config?.headers
+        }
       });
+
+      // More specific error messages
+      let errorMessage = 'Error running code';
+      let errorDetails = null;
+
+      if (error.response?.status === 401) {
+        errorMessage = 'Please login to run code';
+      } else if (error.response?.status === 413) {
+        errorMessage = 'Code is too large';
+      } else if (error.response?.status === 429) {
+        errorMessage = 'Too many requests. Please try again later';
+      } else {
+        errorMessage = error.response?.data?.message || error.message;
+        errorDetails = error.response?.data?.error || null;
+      }
+
       setOutput({
         type: 'error',
-        message: 'Error running code',
-        details: error.response?.data?.message || error.message
+        message: errorMessage,
+        details: errorDetails
       });
     } finally {
       setIsProcessing(false);
@@ -106,6 +130,7 @@ const ProblemDetail = () => {
       console.log('Submitting code for problem:', {
         problemId: id,
         language,
+        codeLength: code.length,
         baseURL: api.defaults.baseURL
       });
 
@@ -113,7 +138,8 @@ const ProblemDetail = () => {
         problemId: id,
         code,
         language,
-        mode: 'submit'
+        mode: 'submit',
+        isOnlineCompiler: false
       });
       
       console.log('Submit response:', response.data);
@@ -121,7 +147,7 @@ const ProblemDetail = () => {
       setOutput({
         type: response.data.verdict === 'Accepted' ? 'success' : 'error',
         message: response.data.verdict,
-        details: response.data.error !== response.data.verdict ? response.data.error : null
+        details: response.data.error || response.data.output || null
       });
 
       if (response.data.verdict !== 'Accepted') {
@@ -135,12 +161,34 @@ const ProblemDetail = () => {
       console.error('Submit error:', {
         message: error.message,
         response: error.response?.data,
-        status: error.response?.status
+        status: error.response?.status,
+        headers: error.response?.headers,
+        config: {
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          headers: error.config?.headers
+        }
       });
+
+      // More specific error messages
+      let errorMessage = 'Submission failed';
+      let errorDetails = null;
+
+      if (error.response?.status === 401) {
+        errorMessage = 'Please login to submit code';
+      } else if (error.response?.status === 413) {
+        errorMessage = 'Code is too large';
+      } else if (error.response?.status === 429) {
+        errorMessage = 'Too many requests. Please try again later';
+      } else {
+        errorMessage = error.response?.data?.message || error.message;
+        errorDetails = error.response?.data?.error || null;
+      }
+
       setOutput({
         type: 'error',
-        message: 'Submission failed',
-        details: error.response?.data?.message || error.message
+        message: errorMessage,
+        details: errorDetails
       });
     } finally {
       setIsProcessing(false);

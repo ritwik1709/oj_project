@@ -21,32 +21,50 @@ const OnlineCompiler = () => {
     setOutput('');
     try {
       console.log('Running code with:', {
-        code,
-        input,
+        code: code.substring(0, 100) + '...', // Log first 100 chars of code
+        input: input.substring(0, 100) + '...', // Log first 100 chars of input
         language,
         baseURL: api.defaults.baseURL
       });
       
-      const response = await api.post('/submissions/compile', {
+      const response = await api.post('/submissions/submit', {
         code,
         input,
-        language
+        language,
+        mode: 'run',
+        isOnlineCompiler: true // Add flag to identify online compiler submissions
       });
       
       console.log('Compilation response:', response.data);
       
-      if (response.data.error) {
-        setOutput(`Error: ${response.data.error}`);
-      } else {
+      if (response.data.verdict === 'Accepted') {
         setOutput(response.data.output || 'No output');
+      } else {
+        setOutput(`Error: ${response.data.error || response.data.verdict}`);
       }
     } catch (error) {
       console.error('Compilation error:', {
         message: error.message,
         response: error.response?.data,
-        status: error.response?.status
+        status: error.response?.status,
+        headers: error.response?.headers,
+        config: {
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          headers: error.config?.headers
+        }
       });
-      setOutput(error.response?.data?.error || 'An error occurred while running the code');
+      
+      // More specific error messages
+      if (error.response?.status === 401) {
+        setOutput('Error: Please login to use the online compiler');
+      } else if (error.response?.status === 413) {
+        setOutput('Error: Code or input is too large');
+      } else if (error.response?.status === 429) {
+        setOutput('Error: Too many requests. Please try again later');
+      } else {
+        setOutput(error.response?.data?.error || error.response?.data?.message || 'An error occurred while running the code');
+      }
     } finally {
       setIsLoading(false);
     }
