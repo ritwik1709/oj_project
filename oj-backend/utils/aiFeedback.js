@@ -13,29 +13,35 @@ export const generateAIFeedback = async (code, language, verdict, testCase) => {
         const client = new HfInference(process.env.HF_API_TOKEN);
         console.log('Hugging Face client initialized');
         
-        const prompt = `You are a programming mentor. Analyze this code and provide ONLY a helpful hint (no explanations, no reasoning, no steps):
+        const prompt = `[INST] <<SYS>>
+You are a programming mentor. Your task is to provide a single, concise hint for a coding problem. 
+- Do not include any explanations, reasoning, or steps
+- Do not mention specific test cases or input/output values
+- Do not reveal the exact solution
+- Focus on the general approach or concept
+- Keep the hint generic and applicable to any similar input
+<</SYS>>
 
+Problem details:
 Language: ${language}
 Verdict: ${verdict}
-Failed Test Case:
-Input: ${testCase.input}
-Expected Output: ${testCase.expectedOutput}
-Actual Output: ${testCase.output}
+The code is not producing the expected output. The input and output formats are correct, but the transformation is incorrect.
 
 Code:
 ${code}
 
-Provide a single, concise hint that points out what might be wrong and suggests a direction without revealing the solution.`;
+Provide a single hint that suggests the general approach or concept needed, without mentioning specific test cases. [/INST]`;
 
         console.log('Sending request to Hugging Face API...');
         const response = await client.textGeneration({
             model: "meta-llama/Llama-3.1-8B-Instruct",
             inputs: prompt,
             parameters: {
-                max_new_tokens: 150,
+                max_new_tokens: 100,
                 temperature: 0.7,
                 top_p: 0.95,
-                repetition_penalty: 1.1
+                repetition_penalty: 1.1,
+                return_full_text: false
             }
         });
         
@@ -46,17 +52,25 @@ Provide a single, concise hint that points out what might be wrong and suggests 
 
         // Clean up the response
         let hint = response.generated_text
-            // Remove the prompt if it was included in the response
-            .replace(/You are a programming mentor.*?Code:[\s\S]*?Provide a single, concise hint that/g, '')
+            // Remove any system prompts or instructions
+            .replace(/\[INST\].*?\[\/INST\]/gs, '')
+            .replace(/<<SYS>>.*?<<\/SYS>>/gs, '')
+            // Remove the problem details section
+            .replace(/Problem details:.*?Code:/gs, '')
             // Remove any markdown formatting
             .replace(/\*\*/g, '')
             .replace(/#{1,6}\s/g, '')
             .replace(/---/g, '')
             // Remove any "Hint:" or similar prefixes
-            .replace(/^(Hint|Suggestion|Advice):\s*/i, '')
+            .replace(/^(Hint|Suggestion|Advice|Response):\s*/i, '')
             // Remove any step-by-step sections
             .replace(/\n## Step.*$/s, '')
-            // Trim whitespace and newlines
+            // Remove any remaining code blocks
+            .replace(/```.*?```/gs, '')
+            // Remove any remaining newlines and extra spaces
+            .replace(/\n+/g, ' ')
+            .replace(/\s+/g, ' ')
+            // Trim whitespace
             .trim()
             // Remove any trailing periods
             .replace(/\.+$/, '')
@@ -64,8 +78,19 @@ Provide a single, concise hint that points out what might be wrong and suggests 
             + '.';
 
         // If the hint is too long, truncate it
-        if (hint.length > 200) {
-            hint = hint.substring(0, 197) + '...';
+        if (hint.length > 150) {
+            hint = hint.substring(0, 147) + '...';
+        }
+
+        // Final check to ensure we don't return the prompt or test cases
+        if (hint.includes('You are a programming mentor') || 
+            hint.includes('Problem details') || 
+            hint.includes('Language:') || 
+            hint.includes('Verdict:') ||
+            hint.includes(testCase.input) ||
+            hint.includes(testCase.expectedOutput) ||
+            hint.includes(testCase.output)) {
+            return "Consider reviewing your code logic and checking if it performs the required transformation correctly.";
         }
         
         return hint;
