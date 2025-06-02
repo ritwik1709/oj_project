@@ -2,7 +2,11 @@ import { HfInference } from '@huggingface/inference';
 
 export const generateAIFeedback = async (code, language, verdict, testCase) => {
     try {
+        console.log('Starting AI Feedback Generation...');
+        console.log('Environment check - HF_API_TOKEN exists:', !!process.env.HF_API_TOKEN);
+        
         const client = new HfInference(process.env.HF_API_TOKEN);
+        console.log('Hugging Face client initialized');
         
         const prompt = `As a programming mentor, analyze this code submission:
 Language: ${language}
@@ -17,10 +21,10 @@ ${code}
 
 Provide a helpful hint that:
 1. Points out what might be wrong
-2. Suggests areas to check
-3. Gives a general direction without revealing the exact solution
+2. Gives a general direction without revealing the exact solution
 Keep the response concise and focused on the specific issue.`;
 
+        console.log('Sending request to Hugging Face API...');
         const response = await client.textGeneration({
             model: "meta-llama/Llama-2-7b-chat-hf",
             inputs: prompt,
@@ -32,9 +36,16 @@ Keep the response concise and focused on the specific issue.`;
             }
         });
         
+        console.log('Received response from Hugging Face API');
         return response.generated_text;
     } catch (error) {
-        console.error('AI Feedback Error:', error);
+        console.error('AI Feedback Error Details:', {
+            message: error.message,
+            name: error.name,
+            stack: error.stack,
+            status: error.status,
+            statusText: error.statusText
+        });
         // Provide more specific fallback messages based on the verdict
         switch (verdict) {
             case 'Wrong Answer':
