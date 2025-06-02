@@ -13,31 +13,23 @@ export const generateAIFeedback = async (code, language, verdict, testCase) => {
         const client = new HfInference(process.env.HF_API_TOKEN);
         console.log('Hugging Face client initialized');
         
-        const prompt = `[INST] <<SYS>>
-You are a programming mentor. Your task is to provide a single, concise hint for a coding problem. 
-- Do not include any explanations, reasoning, or steps
-- Do not mention specific test cases or input/output values
-- Do not reveal the exact solution
-- Focus on the general approach or concept
-- Keep the hint generic and applicable to any similar input
-<</SYS>>
+        const prompt = `[INST] You are a programming mentor. Provide a single, concise hint for this code. Focus on the general approach needed, without mentioning specific test cases.
 
-Problem details:
 Language: ${language}
 Verdict: ${verdict}
-The code is not producing the expected output. The input and output formats are correct, but the transformation is incorrect.
+The code needs to transform the input in a specific way.
 
 Code:
 ${code}
 
-Provide a single hint that suggests the general approach or concept needed, without mentioning specific test cases. [/INST]`;
+Give a brief hint about what might be wrong or what approach to consider. [/INST]`;
 
         console.log('Sending request to Hugging Face API...');
         const response = await client.textGeneration({
             model: "meta-llama/Llama-3.1-8B-Instruct",
             inputs: prompt,
             parameters: {
-                max_new_tokens: 100,
+                max_new_tokens: 80,
                 temperature: 0.7,
                 top_p: 0.95,
                 repetition_penalty: 1.1,
@@ -52,17 +44,19 @@ Provide a single hint that suggests the general approach or concept needed, with
 
         // Clean up the response
         let hint = response.generated_text
-            // Remove any system prompts or instructions
+            // Remove any instruction tags
             .replace(/\[INST\].*?\[\/INST\]/gs, '')
             .replace(/<<SYS>>.*?<<\/SYS>>/gs, '')
-            // Remove the problem details section
-            .replace(/Problem details:.*?Code:/gs, '')
+            .replace(/<<ANS>>/g, '')
+            .replace(/<<\/ANS>>/g, '')
+            // Remove any other model-specific tags
+            .replace(/<<.*?>>/g, '')
             // Remove any markdown formatting
             .replace(/\*\*/g, '')
             .replace(/#{1,6}\s/g, '')
             .replace(/---/g, '')
             // Remove any "Hint:" or similar prefixes
-            .replace(/^(Hint|Suggestion|Advice|Response):\s*/i, '')
+            .replace(/^(Hint|Suggestion|Advice|Response|Answer):\s*/i, '')
             // Remove any step-by-step sections
             .replace(/\n## Step.*$/s, '')
             // Remove any remaining code blocks
@@ -78,18 +72,19 @@ Provide a single hint that suggests the general approach or concept needed, with
             + '.';
 
         // If the hint is too long, truncate it
-        if (hint.length > 150) {
-            hint = hint.substring(0, 147) + '...';
+        if (hint.length > 120) {
+            hint = hint.substring(0, 117) + '...';
         }
 
         // Final check to ensure we don't return the prompt or test cases
         if (hint.includes('You are a programming mentor') || 
-            hint.includes('Problem details') || 
             hint.includes('Language:') || 
             hint.includes('Verdict:') ||
             hint.includes(testCase.input) ||
             hint.includes(testCase.expectedOutput) ||
-            hint.includes(testCase.output)) {
+            hint.includes(testCase.output) ||
+            hint.includes('<<') ||
+            hint.includes('>>')) {
             return "Consider reviewing your code logic and checking if it performs the required transformation correctly.";
         }
         
