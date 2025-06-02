@@ -1,4 +1,4 @@
-import { InferenceClient } from '@huggingface/inference';
+import { HfInference } from '@huggingface/inference';
 
 const MAX_RETRIES = 2;
 const RETRY_DELAY = 1000; // 1 second
@@ -10,7 +10,7 @@ export const generateAIFeedback = async (code, language, verdict, testCase) => {
         console.log('Starting AI Feedback Generation...');
         console.log('Environment check - HF_API_TOKEN exists:', !!process.env.HF_API_TOKEN);
         
-        const client = new InferenceClient(process.env.HF_API_TOKEN);
+        const client = new HfInference(process.env.HF_API_TOKEN);
         console.log('Hugging Face client initialized');
         
         const prompt = `As a programming mentor, analyze this code submission:
@@ -31,21 +31,23 @@ Provide a helpful hint that:
 Keep the response concise and focused on the specific issue.`;
 
         console.log('Sending request to Hugging Face API...');
-        const chatCompletion = await client.chatCompletion({
-            provider: "hf-inference",
+        const response = await client.textGeneration({
             model: "meta-llama/Llama-3.1-8B-Instruct",
-            messages: [{
-                role: "user",
-                content: prompt
-            }]
+            inputs: prompt,
+            parameters: {
+                max_new_tokens: 250,
+                temperature: 0.7,
+                top_p: 0.95,
+                repetition_penalty: 1.1
+            }
         });
         
         console.log('Received response from Hugging Face API');
-        if (!chatCompletion.choices?.[0]?.message?.content) {
+        if (!response.generated_text) {
             throw new Error('No content in the response');
         }
         
-        return chatCompletion.choices[0].message.content;
+        return response.generated_text;
     } catch (error) {
         console.error('AI Feedback Error Details:', {
             message: error.message,
