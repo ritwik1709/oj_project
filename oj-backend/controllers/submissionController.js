@@ -15,6 +15,7 @@ export const submitCode = async (req, res) => {
     }
 
     let testCases = [];
+    let problem = null;
     if (isOnlineCompiler) {
       // For online compiler, use the provided input as a single test case
       testCases = [{
@@ -23,7 +24,7 @@ export const submitCode = async (req, res) => {
       }];
     } else {
       // For problem submissions, get test cases from the problem
-      const problem = await Problem.findById(problemId);
+      problem = await Problem.findById(problemId);
       if (!problem) return res.status(404).json({ message: 'Problem not found' });
       testCases = mode === 'run' ? problem.sampleTestCases : problem.fullTestCases;
       
@@ -45,7 +46,8 @@ export const submitCode = async (req, res) => {
         const testCaseWithOutput = {
           input: failedTestCase.input,
           expectedOutput: failedTestCase.output,
-          output: result.got || result.error || ''
+          output: result.got || result.error || '',
+          description: problem.description
         };
         aiFeedback = await generateAIFeedback(code, language, result.verdict, testCaseWithOutput);
       }

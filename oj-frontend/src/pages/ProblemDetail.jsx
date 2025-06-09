@@ -315,10 +315,21 @@ const ProblemDetail = () => {
           </div>
         )}
 
+      
         {showAIHint && aiHint && (
           <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-100 dark:border-blue-800">
-            <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">AI Hint:</h4>
-            <p className="text-blue-700 dark:text-blue-200">{aiHint}</p>
+            <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-4">AI Hint:</h4>
+            <div className="space-y-4">
+              {aiHint.split('\n\n').map((section, index) => {
+                const [header, ...content] = section.split('\n');
+                return (
+                  <div key={index} className="bg-white dark:bg-gray-800/50 p-3 rounded-md">
+                    <h5 className="font-medium text-blue-700 dark:text-blue-400 mb-2">{header}</h5>
+                    <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">{content.join('\n')}</p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>
