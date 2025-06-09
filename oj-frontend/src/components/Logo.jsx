@@ -16,7 +16,7 @@ const Logo = () => {
       </div>
       <div className="flex flex-col">
         <span className="text-2xl font-bold bg-gradient-to-r from-indigo-100 via-indigo-200 to-indigo-400 bg-clip-text text-transparent drop-shadow-[0_1px_1px_rgba(0,0,0,0.3)]">
-          CodeArena
+          JudgeX
         </span>
       </div>
     </Link>
