@@ -9,5 +9,5 @@ jobs:
   ping:
     runs-on: ubuntu-latest
     steps:
-      - name: Curl your app
+      - name: Ping your app
         run: curl -s https://online-judge-frontend-1jhg.onrender.com/ > /dev/null
